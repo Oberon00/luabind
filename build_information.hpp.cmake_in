@@ -1,5 +1,18 @@
-// Copyright (c) 2004 Daniel Wallin and Arvid Norberg
+/** @file
+    @brief Generated header containing build options that change the library contents.
 
+    @date 2013
+
+    @author
+    Ryan Pavlik
+    <rpavlik@iastate.edu> and <abiryan@ryand.net>
+    http://academic.cleardefinition.com/
+    Iowa State University Virtual Reality Applications Center
+    Human-Computer Interaction Graduate Program
+
+*/
+
+//           Copyright Iowa State University 2013.
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
 // to deal in the Software without restriction, including without limitation
@@ -20,39 +33,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 // OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "test.hpp"
-#include <luabind/luabind.hpp>
-#include <luabind/scope.hpp>
+#ifndef INCLUDED_BuildInformation_hpp_GUID_90CCCE9E_4374_4090_36BA_3AA2C22271F7
+#define INCLUDED_BuildInformation_hpp_GUID_90CCCE9E_4374_4090_36BA_3AA2C22271F7
 
-namespace {
+#cmakedefine LUABIND_NO_ERROR_CHECKING 1
 
-    struct X {};
-    struct Y {};
+#cmakedefine LUABIND_NO_EXCEPTIONS 1
 
-luabind::scope test_separate_registration()
-{
-    using namespace luabind;
+#cmakedefine LUABIND_CPLUSPLUS_LUA 1
 
-    return class_<X>("X")
-               .def(constructor<>()),
-           class_<Y>("Y")
-               .def(constructor<>())
-           ;
-}
+#cmakedefine LUABIND_USE_NOEXCEPT 1
 
-} // namespace unnamed
+#cmakedefine LUABIND_NOT_THREADSAFE 1
 
-void test_main(lua_State* L)
-{
-    using namespace luabind;
+#cmakedefine LUABIND_DYNAMIC_LINK 1
 
-    module(L)
-    [
-        namespace_("Z") [
-            test_separate_registration()
-        ]
-    ];
+/// TODO does this actually change the ABI?
+#cmakedefine LUABIND_NO_SCOPED_ENUM 1
 
-    DOSTRING(L, "x = Z.X()");
-    DOSTRING(L, "y = Z.Y()");
-}
+#endif // INCLUDED_BuildInformation_hpp_GUID_90CCCE9E_4374_4090_36BA_3AA2C22271F7
+

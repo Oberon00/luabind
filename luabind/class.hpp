@@ -75,7 +75,6 @@
 #include <luabind/detail/call.hpp>
 #include <luabind/detail/call_member.hpp>
 #include <luabind/detail/class_rep.hpp>
-#include <luabind/detail/compute_score.hpp>
 #include <luabind/detail/constructor.hpp>
 #include <luabind/detail/deduce_signature.hpp>
 #include <luabind/detail/enum_maker.hpp>
@@ -567,7 +566,7 @@ namespace luabind
         {
             return this->virtual_def(
                 name_, fn, default_or_policies, detail::null_type()
-              , LUABIND_MSVC_TYPENAME detail::is_policy_cons<DefaultOrPolicies>::type());
+              , typename detail::is_policy_cons<DefaultOrPolicies>::type());
         }
 
         template<class F, class Default, class Policies>

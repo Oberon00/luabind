@@ -25,6 +25,9 @@
 #define LUABIND_CONFIG_HPP_INCLUDED
 
 #include <boost/config.hpp>
+#include <boost/detail/workaround.hpp>
+
+#include <luabind/build_information.hpp>
 
 #ifdef BOOST_MSVC
     #define LUABIND_ANONYMOUS_FIX static
@@ -32,26 +35,8 @@
     #define LUABIND_ANONYMOUS_FIX
 #endif
 
-#if defined (BOOST_MSVC) && (BOOST_MSVC <= 1200)
-
-#define for if (false) {} else for
-
-#include <cstring>
-
-namespace std
-{
-    using ::strlen;
-    using ::strcmp;
-    using ::type_info;
-}
-
-#endif
-
-
-#if defined (BOOST_MSVC) && (BOOST_MSVC <= 1300)
-    #define LUABIND_MSVC_TYPENAME
-#else
-    #define LUABIND_MSVC_TYPENAME typename
+#if BOOST_WORKAROUND(BOOST_MSVC, <= 1300)
+    #error "Support for your version of Visual C++ has been removed from this version of Luabind"
 #endif
 
 // the maximum number of arguments of functions that's
@@ -101,11 +86,17 @@ namespace std
 // C code has undefined behavior, lua is written in C).
 
 #ifdef LUABIND_DYNAMIC_LINK
-# ifdef BOOST_WINDOWS
+# if defined (BOOST_WINDOWS)
 #  ifdef LUABIND_BUILDING
 #   define LUABIND_API __declspec(dllexport)
 #  else
 #   define LUABIND_API __declspec(dllimport)
+#  endif
+# elif defined (__CYGWIN__)
+#  ifdef LUABIND_BUILDING
+#   define LUABIND_API __attribute__ ((dllexport))
+#  else
+#   define LUABIND_API __attribute__ ((dllimport))
 #  endif
 # else
 #  if defined(__GNUC__) && __GNUC__ >=4
@@ -124,7 +115,9 @@ namespace std
      || defined(BOOST_NO_SCOPED_ENUMS)          \
      || defined(BOOST_NO_CXX11_HDR_TYPE_TRAITS) \
      || defined(BOOST_NO_0X_HDR_TYPE_TRAITS))
-#   define LUABIND_NO_SCOPED_ENUM
+#   ifndef LUABIND_NO_SCOPED_ENUM
+#       define LUABIND_NO_SCOPED_ENUM
+#   endif
 #endif
 
 #if (   defined(BOOST_NO_CXX11_RVALUE_REFERENCES) \

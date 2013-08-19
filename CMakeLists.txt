@@ -1,142 +1,209 @@
-cmake_minimum_required(VERSION 2.6)
-project(luabind)
+# Build for LuaBind
+# Ryan Pavlik <rpavlik@iastate.edu>
+# http://academic.cleardefinition.com/
+# Iowa State University HCI Graduate Program/VRAC
 
-include(CMakeDependentOption)
+cmake_minimum_required(VERSION 2.8)
+set(CMAKE_LEGACY_CYGWIN_WIN32 0) # Remove when CMake >= 2.8.4 is required
+project(LuaBind)
 
-option(LUABIND_ENABLE_WARNINGS
-       "Enable compiler warnings during the build of luabind and the tests.")
+set(CPACK_PACKAGE_VERSION_MAJOR "0")
+set(CPACK_PACKAGE_VERSION_MINOR "9")
+set(CPACK_PACKAGE_VERSION_PATCH "1")
+set(CPACK_PACKAGE_VERSION
+    "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU|Clang")
-    option(LUABIND_NO_CXX11 "Disable C++11 support." OFF)
+list(APPEND CMAKE_MODULE_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx11/Modules")
+
+if(NOT Boost_FOUND)
+    set(Boost_USE_STATIC_LIBS     ON)
+    set(Boost_USE_MULTITHREADED   ON)
+    set(Boost_USE_STATIC_RUNTIME OFF)
+    find_package(Boost REQUIRED)
 endif()
 
-option(LUABIND_SKIP_TESTS
-       "Do not build the tests (they must be *run* manually in any case)")
+if(NOT LUA_FOUND AND NOT LUA51_FOUND AND NOT LUA52_FOUND)
+    set(LUABIND_LUA_VERSION "" CACHE STRING
+        "51 or 52; empty to use 51 if 52 cannot be found and 52 otherwise.")
 
-CMAKE_DEPENDENT_OPTION(LUABIND_BUILD_HEADER_TESTS
-       "Enable this for (many) additional compilation tests." OFF
-       "NOT LUABIND_SKIP_TESTS" OFF)
-
-option(LUABIND_APPEND_VERSION_SUFFIX
-    "Append the 09 suffix to generated libraries (recommended)." ON)
-
-option(BUILD_SHARED_LIBS
-    "Build luabind as a shared/dynamic library (.so or DLL). You must link Lua dynamically then.")
-
-set(LUABIND_LUA_VERSION "" CACHE STRING
-    "51 or 52; empty to use 51 if 52 cannot be found and 52 otherwise.")
-
-set(CMAKE_MODULE_PATH
-    ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/Modules/")
-
-set(Boost_USE_STATIC_LIBS     ON)
-set(Boost_USE_MULTITHREADED   ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost 1.40.0 REQUIRED) # Better use at least 1.51.
-
-if (LUABIND_LUA_VERSION)
-    find_package("Lua${LUABIND_LUA_VERSION}" REQUIRED)
-else(LUABIND_LUA_VERSION)
-    find_package(Lua52)
-    if (NOT LUA52_FOUND)
-        find_package(Lua51)
-        if (NOT LUA51_FOUND)
-            message(FATAL_ERROR "Neither Lua 5.1 nor 5.2 could be found.")
-        endif(NOT LUA51_FOUND)
-    endif(NOT LUA52_FOUND)
-endif(LUABIND_LUA_VERSION)
-
-if (BUILD_SHARED_LIBS)
-    add_definitions("-DLUABIND_DYNAMIC_LINK")
+    if(LUABIND_LUA_VERSION)
+        find_package("Lua${LUABIND_LUA_VERSION}" REQUIRED)
+    else()
+        find_package(Lua52)
+        if(NOT LUA52_FOUND)
+            find_package(Lua51)
+            if(NOT LUA51_FOUND)
+                message(FATAL_ERROR "Neither Lua 5.1 nor 5.2 could be found.")
+            endif()
+        endif()
+    endif()
+    set(LUA_INCLUDE_DIRS "${LUA_INCLUDE_DIR}")
 endif()
 
-if (MSVC)
-    add_definitions("/MP") # Multiprocessor compilation
-    if (LUABIND_ENABLE_WARNINGS)
-        add_definitions(
-            "/W4" # Warning level 4
+# C++11-related searches
+find_package(CXXFeatures)
 
-            # Disable incorrect warning C4709
-            # ("comma operator within array index expression"):
-            "/wd4709")
-    endif(LUABIND_ENABLE_WARNINGS)
-    if (BUILD_SHARED_LIBS) # Yes, this also concers the default /W3.
-        # warning C4251
-        # "... needs to have dll-interface to be used by clients of ..."
-        # is issued a lot for private symbols or symbols in a detail
-        # namespace.
-        add_definitions("/wd4251")
-    endif(BUILD_SHARED_LIBS)
-else(MSVC)
-    # see http://stackoverflow.com/a/11004675/2128694
-    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
-        execute_process(
-            COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-        if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7
-                AND NOT LUABIND_NO_CXX11)
-            add_definitions("-std=c++11")
-            if (LUABIND_ENABLE_WARNINGS)
-                add_definitions("-Wnoexcept")
-            endif(LUABIND_ENABLE_WARNINGS)
-        elseif(LUABIND_ENABLE_WARNINGS)
-            add_definitions("-Wno-long-long")
-        endif()
-        if (BUILD_SHARED_LIBS AND
-                GCC_VERSION VERSION_GREATER 4 OR GCC_VERSION VERSION_EQUAL 4)
-            add_definitions("-fvisibility=hidden")
-        endif()
-        # This warning is enabled by default:
-        add_definitions("-Wno-deprecated-declarations") # auto_ptr is OK for now.
-        if (LUABIND_ENABLE_WARNINGS)
-            if (GCC_VERSION VERSION_GREATER 4.3
-                    OR GCC_VERSION VERSION_EQUAL 4.3)
-                add_definitions("-Wlogical-op" "-Wmissing-declarations"
-                                "-Wsign-conversion")
-            endif() # gcc >= 4.3
-            add_definitions("-pedantic" "-Wall" "-Wextra" "-Wcast-align"
-                            "-Wcast-qual" "-Wctor-dtor-privacy" "-Winit-self"
-                            "-Wdisabled-optimization" "-Wformat=2"
-                            "-Wmissing-include-dirs" "-Wold-style-cast"
-                            "-Woverloaded-virtual" "-Wredundant-decls"
-                            "-Wshadow" "-Wsign-promo"
-                            "-Wstrict-null-sentinel" "-Wstrict-overflow=5")
-        endif(LUABIND_ENABLE_WARNINGS)
-    elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-        add_definitions("-fvisibility=hidden")
-        if (LUABIND_ENABLE_WARNINGS)
-            add_definitions("-Weverything" "-Wno-shadow" "-Wno-undef"
-                            "-Wno-global-constructors" "-Wno-weak-vtables"
-                            "-Wno-padded" "-Wno-exit-time-destructors"
-                            "-Wno-missing-noreturn")
-        endif(LUABIND_ENABLE_WARNINGS)
-        if (NOT LUABIND_NO_CXX11)
-            # I do not know (a) since when Clang supports this flags and (b) how to
-            # check Clang's version. Use LUABIND_NO_CXX11 manually if you need to.
-            add_definitions("-std=c++11")
-            if (LUABIND_ENABLE_WARNINGS)
-                add_definitions("-Wno-c++98-compat" "-Wno-c++98-compat-pedantic")
-            endif(LUABIND_ENABLE_WARNINGS)
-        elseif(LUABIND_ENABLE_WARNINGS)
-            add_definitions("-Wno-c++11-long-long")
-        endif()
-    endif() # Clang
-endif(MSVC) # else part
-
-add_subdirectory("src")
-
-if (NOT LUABIND_SKIP_TESTS)
-    enable_testing()
-    add_subdirectory("test")
+set(LUABIND_CXX11_DEFAULT OFF)
+if(CXX11_COMPILER_FLAGS) # TODO this is not quite the right check to use here.
+    set(LUABIND_CXX11_DEFAULT ON)
 endif()
 
-install(DIRECTORY luabind DESTINATION include
-        FILES_MATCHING PATTERN "*.hpp")
-if(WIN32 AND NOT CYGWIN)
-  set(INSTALL_CMAKE_DIR CMake)
-  set(INSTALL_CMAKE_DIR_LUA CMake)
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    # We are the top-level project
+    option(LUABIND_INSTALL "Install the LuaBind library and headers" ON)
+    option(LUABIND_NO_ERROR_CHECKING "Build so that all the Lua code is expected only to make legal calls?" OFF)
+    option(LUABIND_NO_EXCEPTIONS "Disable all usage of try, catch, and throw?" OFF)
+    option(LUABIND_CPLUSPLUS_LUA "Was Lua built as C++?" OFF)
+    option(LUABIND_DYNAMIC_LINK "Build luabind as a shared library?" OFF)
+    option(LUABIND_NOT_THREADSAFE "Permit the use of static variables, thus making Luabind usable only from one of your system threads." OFF)
+    option(LUABIND_ENABLE_WARNINGS "Enable extra warnings during the build of the library and tests" ON)
+    option(LUABIND_USE_CXX11 "Build Luabind using C++11 features?" ${LUABIND_CXX11_DEFAULT})
+
+    if(Boost_VERSION LESS 104700)
+        option(LUABIND_USE_NOEXCEPT "If your compiler is C++11 compliant, but you're using old Boost, you need to set this." ${LUABIND_CXX11_DEFAULT})
+    endif()
+
+    if(LUABIND_USE_CXX11)
+        option(LUABIND_NO_SCOPED_ENUM "Indicates that your compiler and standard library lacks scoped enums and std::underlying_type" OFF)
+        set(LUABIND_NO_STD_SHARED_PTR OFF)
+    else()
+        # No CXX11, can't have scoped enum
+        # TODO is this right?
+        #set(LUABIND_NO_SCOPED_ENUM ON CACHE INTERNAL "" FORCE)
+        option(LUABIND_NO_STD_SHARED_PTR "Indicates that your standard library lacks C++11 shared_ptr in std namespace" ON)
+    endif()
+
+endif()
+
+if(LUABIND_NO_STD_SHARED_PTR)
+    add_definitions(-DLUABIND_NO_STD_SHARED_PTR)
+endif()
+
+# Configure the build info header
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/luabind")
+configure_file(build_information.hpp.cmake_in "${CMAKE_CURRENT_BINARY_DIR}/luabind/build_information.hpp")
+
+# Set up the build
+set(BUILD_SHARED_LIBS ${LUABIND_DYNAMIC_LINK})
+
+if(LUABIND_USE_CXX11 AND CXX11_COMPILER_FLAGS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX11_COMPILER_FLAGS}")
+endif()
+
+# Test and enable warning flags if desired, as well as other compiler flag
+include(CheckCXXCompilerFlag)
+macro(_luabind_add_flag _flag _var)
+    check_cxx_compiler_flag(${_flag} ${_var})
+    if(${_var})
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${_flag}")
+    endif()
+endmacro()
+
+if(MSVC)
+    # multi-process compile
+    _luabind_add_flag(/MP SUPPORTS_MP_FLAG)
+    if(LUABIND_ENABLE_WARNINGS)
+        # Warning level 4
+        _luabind_add_flag(/W4 SUPPORTS_W4_FLAG)
+
+        # Disable incorrect warning C4709
+        # ("comma operator within array index expression")
+        _luabind_add_flag(/wd4709 SUPPORTS_WD4709_FLAG)
+    endif()
 else()
-  set(INSTALL_CMAKE_DIR lib/CMake/Luabind)
-  set(INSTALL_CMAKE_DIR_LUA lib/CMake/Lua52)
+
+    set(possible_flags)
+    if(BUILD_SHARED_LIBS)
+        list(APPEND possible_flags fvisibility=hidden)
+    endif()
+    if(LUABIND_ENABLE_WARNINGS)
+        list(APPEND possible_flags
+            Wall
+            Wextra
+            Wno-deprecated-declarations # auto_ptr is OK for now
+            Wlogical-op
+            Wmissing-declarations
+            Wsign-conversion
+            pedantic
+            Wcast-align
+            Wcast-qual
+            Wctor-dtor-privacy
+            Winit-self
+            Wdisabled-optimizations
+            Wformat=2
+            Wmissing-include-dirs
+            Wold-style-cast
+            Woverloaded-virtual
+            Wredundant-decls
+            Wshadow
+            Wsign-promo
+            Wstrict-null-sentinel
+            Wstrict-overflow=5)
+
+
+        if(LUABIND_USE_CXX11)
+            list(APPEND possible_flags Wnoexcept Wno-long-long)
+        endif()
+
+        if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+            list(APPEND possible_flags
+                Weverything
+                Wno-shadow
+                Wno-undef
+                Wno-global-constructors
+                Wno-weak-vtables
+                Wno-padded
+                Wno-exit-time-destructors
+                Wno-missing-noreturn)
+
+            if(LUABIND_USE_CXX11)
+               list(APPEND possible_flags
+                    Wno-c++98-compat
+                    Wno-c++98-compat-pedantic)
+            else()
+               list(APPEND possible_flags
+                    Wno-c++11-long-long)
+            endif()
+
+        endif()
+
+    endif()
+
+    if(possible_flags)
+        foreach(_flag ${possible_flags})
+            string(REGEX REPLACE [-+=] _ sanitized_flag ${_flag})
+            _luabind_add_flag(-${_flag} SUPPORTS_${sanitized_flag}_FLAG)
+        endforeach()
+    endif()
 endif()
-INSTALL(FILES "cmake/Modules/FindLuabind.cmake" DESTINATION ${INSTALL_CMAKE_DIR})
-INSTALL(FILES "cmake/Modules/FindLua52.cmake" DESTINATION ${INSTALL_CMAKE_DIR_LUA})
+
+include_directories(${Boost_INCLUDE_DIRS}
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_BINARY_DIR}"
+    ${LUA_INCLUDE_DIRS})
+
+add_subdirectory(src)
+
+# Set up testing and documentation, only if we are the top-level project.
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    include(CTest)
+    if(BUILD_TESTING)
+        add_subdirectory(test)
+    endif()
+    add_subdirectory(doc)
+endif()
+
+if(LUABIND_INSTALL)
+    if(WIN32 AND NOT CYGWIN)
+        set(INSTALL_CMAKE_DIR CMake)
+        set(INSTALL_CMAKE_DIR_LUA CMake)
+    else()
+        set(INSTALL_CMAKE_DIR lib/CMake/Luabind)
+        set(INSTALL_CMAKE_DIR_LUA lib/CMake/Lua52)
+    endif()
+    install(FILES "cmake/Modules/FindLuabind.cmake" DESTINATION ${INSTALL_CMAKE_DIR})
+    install(FILES "cmake/Modules/FindLua52.cmake" DESTINATION ${INSTALL_CMAKE_DIR_LUA})
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/luabind/build_information.hpp" DESTINATION include/luabind)
+endif()
