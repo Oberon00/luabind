@@ -26,18 +26,11 @@
 
 #include <luabind/config.hpp>
 
+// Predeclaration
+struct lua_State;
+
 namespace luabind
 {
-    namespace detail
-    {
-        LUABIND_API void add_operator_to_metatable(lua_State* L, int op_index);
-        LUABIND_API int create_cpp_class_metatable(lua_State* L);
-        LUABIND_API int create_cpp_instance_metatable(lua_State* L);
-        LUABIND_API int create_lua_class_metatable(lua_State* L);
-        LUABIND_API int create_lua_instance_metatable(lua_State* L);
-        LUABIND_API int create_lua_function_metatable(lua_State* L);
-    }
-
     LUABIND_API void open(lua_State* L);
 }
 
