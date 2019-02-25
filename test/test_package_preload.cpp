@@ -73,7 +73,7 @@ void test_main(lua_State* L)
     DOSTRING(L, "package.preload = nil");
     try {
         set_package_preload(L, "failmod", &loader);
-    } catch (luabind::error const&) {
+    } catch (std::exception const&) {
         TEST_CHECK(std::strcmp("attempt to index a nil value", lua_tostring(L, -1)) == 0);
         lua_pop(L, 1);
         return;
