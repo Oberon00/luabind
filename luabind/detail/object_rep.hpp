@@ -28,7 +28,11 @@
 #include <luabind/detail/class_rep.hpp>
 #include <luabind/detail/instance_holder.hpp>
 
+#ifdef BOOST_NO_CXX11_HDR_TYPE_TRAITS
 #include <boost/aligned_storage.hpp>
+#else
+#include <type_traits>
+#endif
 
 namespace luabind { namespace detail
 {
@@ -98,7 +102,11 @@ namespace luabind { namespace detail
         void operator=(object_rep const&);
 
         BOOST_STATIC_CONSTANT(std::size_t, instance_buffer_size=32);
+#ifdef BOOST_NO_CXX11_HDR_TYPE_TRAITS
         boost::aligned_storage<instance_buffer_size> m_instance_buffer;
+#else
+        std::aligned_storage<instance_buffer_size, alignof (size_t)> m_instance_buffer;
+#endif
         instance_holder* m_instance;
         class_rep* m_classrep; // the class information about this object's type
         std::size_t m_dependency_cnt; // counts dependencies
