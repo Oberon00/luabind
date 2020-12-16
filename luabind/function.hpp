@@ -44,7 +44,7 @@ namespace detail
 template <class F, class Policies>
 scope def(char const* name, F f, Policies const& policies)
 {
-    return scope(std::auto_ptr<detail::registration>(
+    return scope(std::unique_ptr<detail::registration>(
         new detail::function_registration<F, Policies>(name, f, policies)));
 }
 

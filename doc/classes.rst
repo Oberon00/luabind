@@ -416,7 +416,7 @@ where:
 * ``p`` is an instance of ``P``
 
 ``get_pointer()`` overloads are provided for the smart pointers in
-Boost, and ``std::auto_ptr<>``. Should you need to provide your own
+Boost, and ``std::unique_ptr<>``. Should you need to provide your own
 overload, note that it is called unqualified and is expected to be found
 by *argument dependent lookup*. Thus it should be defined in the same
 namespace as the pointer type it operates on.
@@ -433,9 +433,9 @@ Will cause luabind to hold any instance created on the Lua side in a
 will be held by a ``boost::scoped_ptr<X>``. If, for example, you
 register a function::
 
-    std::auto_ptr<X> make_X();
+    std::unique_ptr<X> make_X();
 
-the instance returned by that will be held in ``std::auto_ptr<X>``. This
+the instance returned by that will be held in ``std::unique_ptr<X>``. This
 is handled automatically for all smart pointers that implement a
 ``get_pointer()`` overload.
 
@@ -451,7 +451,7 @@ is handled automatically for all smart pointers that implement a
 
     .. parsed-literal::
 
-      bool is_non_null(std::auto_ptr<X> const& p)
+      bool is_non_null(std::unique_ptr<X> const& p)
       {
           return p.get();
       }
