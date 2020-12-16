@@ -140,7 +140,7 @@ void test_main(lua_State* L)
         call_function<void>(L, "failing_fun");
         TEST_ERROR("function didn't fail when it was expected to");
     }
-    catch (luabind::error const&)
+    catch(std::exception const&)
     {
         if (std::string("[string \"function failing_fun() error('expected "
 #if LUA_VERSION_NUM >= 502

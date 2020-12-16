@@ -246,7 +246,7 @@ void test_main(lua_State* L)
         LUABIND_CHECK_STACK(L);
 
         try { call_function<int>(L, "gen_error"); }
-        catch (luabind::error&)
+        catch (std::exception&)
         {
             bool result(
                 lua_tostring(L, -1) == std::string("[string \"function "
@@ -267,7 +267,7 @@ void test_main(lua_State* L)
         LUABIND_CHECK_STACK(L);
 
         try { call_function<void>(L, "gen_error"); }
-        catch (luabind::error&)
+        catch (std::exception&)
         {
             bool result(
                 lua_tostring(L, -1) == std::string("[string \"function "
@@ -281,7 +281,7 @@ void test_main(lua_State* L)
         LUABIND_CHECK_STACK(L);
 
         try { call_function<void>(L, "gen_error") [ adopt(result) ]; }
-        catch (luabind::error&)
+        catch (std::exception&)
         {
             bool result(
                 lua_tostring(L, -1) == std::string("[string \"function "
