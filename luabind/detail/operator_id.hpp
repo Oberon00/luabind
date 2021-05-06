@@ -44,6 +44,12 @@ namespace luabind { namespace detail {
         op_tostring,
         op_concat,
         op_len,
+        op_band,
+        op_bor,
+        op_bxor,
+        op_bnot,
+        op_shl,
+        op_shr,
 
         number_of_operators
     };
@@ -53,7 +59,8 @@ namespace luabind { namespace detail {
         static const char* a[number_of_operators] = {
             "__add", "__sub", "__mul", "__div", "__mod", "__pow",
             "__lt", "__le", "__eq", "__call", "__unm",
-            "__tostring", "__concat", "__len" };
+            "__tostring", "__concat", "__len",
+            "__band", "__bor", "__bxor", "__bnot", "__shl", "__shr" };
         return a[i];
     }
 
@@ -62,7 +69,8 @@ namespace luabind { namespace detail {
         static const char* a[number_of_operators] = {
             "+", "-", "*", "/", "%", "^", "<",
             "<=", "==", "()", "- (unary)",
-            "tostring", "..", "#" };
+            "tostring", "..", "#",
+            "&", "|", "~", "~ (unary)", "<<", ">>" };
         return a[i];
     }
 

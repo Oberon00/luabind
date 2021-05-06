@@ -296,7 +296,7 @@ namespace luabind { namespace detail
         {
             lua_pushstring(L, get_operator_name(op));
             lua_pushvalue(L, -1);
-            lua_pushboolean(L, op == op_unm || op == op_len); // Unary?
+            lua_pushboolean(L, op == op_unm || op == op_len || op == op_bnot); // Unary?
             lua_pushcclosure(L, &dispatch_operator, 2);
             lua_rawset(L, -3);
         }

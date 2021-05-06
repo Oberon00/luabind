@@ -293,6 +293,11 @@ namespace luabind {
     LUABIND_BINARY_OPERATOR(lt, <)
     LUABIND_BINARY_OPERATOR(le, <=)
     LUABIND_BINARY_OPERATOR(eq, ==)
+    LUABIND_BINARY_OPERATOR(band, &)
+    LUABIND_BINARY_OPERATOR(bor, |)
+    // LUABIND_BINARY_OPERATOR(bxor, ^) -- Already used for pow.
+    LUABIND_BINARY_OPERATOR(shl, <<)
+    LUABIND_BINARY_OPERATOR(shr, >>)
 
 #undef LUABIND_BINARY_OPERATOR
 
@@ -343,6 +348,7 @@ namespace luabind {
 
     LUABIND_UNARY_OPERATOR(tostring, tostring_operator, tostring)
     LUABIND_UNARY_OPERATOR(unm, -, operator-)
+    LUABIND_UNARY_OPERATOR(bnot, ~, operator~)
 
 #undef LUABIND_UNARY_OPERATOR
 

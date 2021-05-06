@@ -66,6 +66,36 @@ float operator%(operator_tester const& /*lhs*/, operator_tester const& /*rhs*/)
     return 15.f;
 }
 
+std::string operator&(operator_tester const& /*lhs*/, operator_tester const& /*rhs*/)
+{
+    return "bitwise and operator";
+}
+
+std::string operator|(operator_tester const& /*lhs*/, operator_tester const& /*rhs*/)
+{
+    return "bitwise or operator";
+}
+
+std::string operator^(operator_tester const& /*lhs*/, operator_tester const& /*rhs*/)
+{
+    return "bitwise xor operator";
+}
+
+std::string operator~(operator_tester const& /*lhs*/)
+{
+    return "bitwise not operator";
+}
+
+std::string operator<<(operator_tester const& /*lhs*/, operator_tester const& /*rhs*/)
+{
+    return "left shift operator";
+}
+
+std::string operator>>(operator_tester const& /*lhs*/, operator_tester const& /*rhs*/)
+{
+    return "right shift operator";
+}
+
 std::string operator*(operator_tester const&, int)
 {
     return "(operator_tester, int) overload";
@@ -149,6 +179,12 @@ void test_main(lua_State* L)
             .def(const_self * const_self)
             .def(const_self * other<int>())
             .def(const_self % const_self)
+            .def(const_self & const_self)
+            .def(const_self | const_self)
+            .def("__bxor", static_cast<std::string(*)(operator_tester const&, operator_tester const&)>(&operator^))
+            .def(~const_self)
+            .def(const_self << const_self)
+            .def(const_self >> const_self)
 //          .def("clone", &clone, adopt(return_value)),
         ,
 
@@ -193,6 +229,16 @@ void test_main(lua_State* L)
     DOSTRING(L, "assert(test * test == 35)");
     DOSTRING(L, "assert(test % test == 15)");
     DOSTRING(L, "assert(test * 3 == '(operator_tester, int) overload')")
+
+#if LUA_VERSION_NUM >= 503
+    DOSTRING(L, "assert(test & test == 'bitwise and operator')")
+    DOSTRING(L, "assert(test | test == 'bitwise or operator')")
+    DOSTRING(L, "assert(test ~ test == 'bitwise xor operator')")
+    DOSTRING(L, "assert(~test == 'bitwise not operator')")
+    DOSTRING(L, "assert(test << test == 'left shift operator')")
+    DOSTRING(L, "assert(test >> test == 'right shift operator')")
+#endif
+
     DOSTRING(L, "assert(test + test2 == 73)");
     DOSTRING(L, "assert(2 + test == 2 + 2)");
     DOSTRING(L, "assert(test + 2 == 1 + 2)");
